@@ -1,0 +1,2 @@
+"""MedAssist RAG Backend Application."""
+
