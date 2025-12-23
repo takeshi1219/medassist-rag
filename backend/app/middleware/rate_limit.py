@@ -44,7 +44,10 @@ def setup_rate_limiter(app: FastAPI) -> None:
     """
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_middleware(SlowAPIMiddleware)
+    
+    # NOTE: SlowAPIMiddleware disabled due to Starlette compatibility issues
+    # The @limiter.limit decorator still works on individual endpoints
+    # app.add_middleware(SlowAPIMiddleware)
     
     logger.info(
         f"Rate limiting configured: {settings.rate_limit_per_minute}/minute, "
