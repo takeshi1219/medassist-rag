@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.post("", response_model=ChatResponse)
-@limiter.limit(CHAT_RATE_LIMIT)
+# @limiter.limit(CHAT_RATE_LIMIT)  # Temporarily disabled due to Starlette compatibility
 async def chat(
     http_request: Request,
     request: ChatRequest,
@@ -88,7 +88,7 @@ async def chat(
 
 
 @router.post("/stream")
-@limiter.limit(CHAT_RATE_LIMIT)
+# @limiter.limit(CHAT_RATE_LIMIT)  # Temporarily disabled due to Starlette compatibility
 async def chat_stream(
     http_request: Request,
     request: ChatRequest,
