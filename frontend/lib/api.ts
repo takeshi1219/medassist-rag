@@ -57,9 +57,17 @@ export interface DrugInteraction {
   source?: string;
 }
 
+export interface Drug {
+  name: string;
+  generic_name?: string;
+  brand_names: string[];
+  drug_class?: string;
+  description?: string;
+}
+
 export interface DrugCheckResponse {
   interactions: DrugInteraction[];
-  alternatives: any[];
+  alternatives: Drug[];
   warnings: string[];
   checked_drugs: string[];
   has_severe_interactions: boolean;
@@ -75,6 +83,13 @@ export interface ICD10Code {
   excludes: string[];
 }
 
+export interface SNOMEDConcept {
+  concept_id: string;
+  term: string;
+  semantic_type?: string;
+  synonyms: string[];
+}
+
 export interface TranslationResponse {
   original_term: string;
   translated_term: string;
@@ -84,6 +99,9 @@ export interface TranslationResponse {
   icd10_codes: string[];
   layman_explanation?: string;
 }
+
+// Alias for backward compatibility
+export type MedicalTermTranslation = TranslationResponse;
 
 // API Client class
 class ApiClient {
