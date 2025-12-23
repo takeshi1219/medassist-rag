@@ -100,6 +100,52 @@ class AuditLogger:
         # Log as structured JSON
         self.audit_logger.info(json.dumps(audit_record))
     
+    def log_access_from_info(
+        self,
+        request_info: Dict[str, Any],
+        action: str,
+        resource: str,
+        response_status: int,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Log a PHI access event from pre-extracted request info.
+        Used by ASGI middleware where Request object isn't available.
+        """
+        if not settings.enable_audit_log:
+            return
+        
+        audit_record = {
+            "event_id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": "PHI_ACCESS",
+            
+            # Who
+            "user_id": request_info.get("user_id", "unknown"),
+            "user_ip": request_info.get("user_ip", "unknown"),
+            "user_agent": request_info.get("user_agent", "unknown"),
+            
+            # What
+            "action": action,
+            "resource": resource,
+            "method": request_info.get("method", ""),
+            "endpoint": request_info.get("path", ""),
+            
+            # Outcome
+            "status_code": response_status,
+            "success": 200 <= response_status < 400,
+            
+            # Context (sanitized)
+            "details": self._sanitize_details(details or {}),
+            
+            # Environment
+            "environment": settings.environment,
+            "app_version": settings.app_version
+        }
+        
+        # Log as structured JSON
+        self.audit_logger.info(json.dumps(audit_record))
+    
     def log_auth_event(
         self,
         event_type: str,
@@ -216,6 +262,11 @@ class AuditMiddleware:
                 action = action_type
                 break
         
+        # Extract request info BEFORE processing (while scope is valid)
+        request_info = None
+        if action and settings.enable_audit_log:
+            request_info = self._extract_request_info(scope)
+        
         # Capture response status
         response_status = 200
         
@@ -228,26 +279,47 @@ class AuditMiddleware:
         await self.app(scope, receive, send_wrapper)
         
         # Log if PHI endpoint was accessed
-        if action and settings.enable_audit_log:
+        if action and request_info:
             try:
-                request = Request(scope)
-                user_id = self._extract_user_id(request)
-                self.audit_logger.log_access(
-                    user_id=user_id,
+                self.audit_logger.log_access_from_info(
+                    request_info=request_info,
                     action=action,
                     resource=path,
-                    request=request,
                     response_status=response_status
                 )
             except Exception as e:
                 logger.warning(f"Audit logging failed: {e}")
     
-    def _extract_user_id(self, request: Request) -> str:
-        """Extract user ID from JWT token if present."""
-        auth_header = request.headers.get("authorization", "")
+    def _extract_request_info(self, scope) -> Dict[str, Any]:
+        """Extract request info from ASGI scope before processing."""
+        headers = dict(scope.get("headers", []))
+        
+        # Get client IP
+        forwarded = headers.get(b"x-forwarded-for", b"").decode()
+        real_ip = headers.get(b"x-real-ip", b"").decode()
+        client = scope.get("client", ("unknown", 0))
+        
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        elif real_ip:
+            client_ip = real_ip
+        else:
+            client_ip = client[0] if client else "unknown"
+        
+        # Get auth header for user ID extraction
+        auth_header = headers.get(b"authorization", b"").decode()
         if auth_header.startswith("Bearer "):
-            return f"user_{hash(auth_header[7:]) % 1000000}"
-        return "anonymous"
+            user_id = f"user_{hash(auth_header[7:]) % 1000000}"
+        else:
+            user_id = "anonymous"
+        
+        return {
+            "user_id": user_id,
+            "user_ip": client_ip,
+            "user_agent": headers.get(b"user-agent", b"unknown").decode()[:200],
+            "method": scope.get("method", ""),
+            "path": scope.get("path", ""),
+        }
 
 
 # Singleton instance
