@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 # ==================== Enums ====================
@@ -128,6 +128,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     """Chat response with RAG-generated answer."""
+    model_config = ConfigDict(protected_namespaces=())
+    
     answer: str
     sources: List[Citation]
     conversation_id: str
