@@ -236,6 +236,23 @@ class ApiClient {
     });
   }
 
+  // Search endpoints
+  async search(
+    query: string,
+    limit: number = 10,
+    sourceType?: string
+  ): Promise<{ results: any[]; total: number; query: string; search_type: string }> {
+    const params = new URLSearchParams({
+      query,
+      limit: limit.toString(),
+      search_type: "hybrid",
+    });
+    if (sourceType) {
+      params.append("source_type", sourceType);
+    }
+    return this.request(`/api/v1/search?${params.toString()}`);
+  }
+
   // History endpoints
   async getHistory(page = 1, pageSize = 20): Promise<any> {
     return this.request(`/api/v1/history?page=${page}&page_size=${pageSize}`);
