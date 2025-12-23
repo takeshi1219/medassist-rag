@@ -65,3 +65,23 @@ export function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength - 3) + "...";
 }
 
+/**
+ * Get color class for drug interaction severity
+ */
+export function getSeverityColor(severity: string): string {
+  switch (severity.toLowerCase()) {
+    case "contraindicated":
+      return "text-red-600 bg-red-100 border-red-200";
+    case "severe":
+      return "text-orange-600 bg-orange-100 border-orange-200";
+    case "moderate":
+      return "text-yellow-600 bg-yellow-100 border-yellow-200";
+    case "mild":
+      return "text-blue-600 bg-blue-100 border-blue-200";
+    case "none":
+      return "text-green-600 bg-green-100 border-green-200";
+    default:
+      return "text-gray-600 bg-gray-100 border-gray-200";
+  }
+}
+
