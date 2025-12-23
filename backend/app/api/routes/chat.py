@@ -75,10 +75,15 @@ async def chat(
     except HTTPException:
         raise
     except Exception as e:
+        # Log full exception details for debugging
         logger.exception(f"Chat error: {e}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        logger.error(f"Exception args: {e.args}")
+        # Return more helpful error in non-production
+        error_detail = str(e) if not settings.is_production else "An error occurred while processing your query"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while processing your query"
+            detail=error_detail
         )
 
 
