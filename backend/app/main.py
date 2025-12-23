@@ -290,6 +290,19 @@ async def readiness_probe():
     return {"status": "ready"}
 
 
+def get_cors_headers(request: Request) -> dict:
+    """Get CORS headers for error responses."""
+    origin = request.headers.get("origin", "")
+    if origin in settings.allowed_origins_list:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    return {}
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled errors."""
@@ -299,12 +312,16 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Return sanitized error in production
     error_detail = str(exc) if settings.debug else "An internal server error occurred"
     
+    # Include CORS headers for cross-origin error responses
+    headers = get_cors_headers(request)
+    
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "detail": error_detail,
             "type": "internal_error"
-        }
+        },
+        headers=headers
     )
 
 
@@ -316,8 +333,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     elif exc.status_code >= 400:
         logger.warning(f"HTTP {exc.status_code} on {request.url.path}: {exc.detail}")
     
+    # Merge CORS headers with any existing exception headers
+    headers = get_cors_headers(request)
+    if hasattr(exc, "headers") and exc.headers:
+        headers.update(exc.headers)
+    
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-        headers=getattr(exc, "headers", None)
+        headers=headers if headers else None
     )
