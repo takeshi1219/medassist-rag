@@ -145,27 +145,50 @@ else:
     logger.warning("CORS not configured - no origins allowed")
 
 
-@app.middleware("http")
-async def add_request_metadata(request: Request, call_next):
-    """Add request ID and processing time to responses."""
-    import uuid
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+class RequestMetadataMiddleware:
+    """Pure ASGI middleware to add request ID and processing time."""
     
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
+    def __init__(self, app):
+        self.app = app
     
-    response.headers["X-Process-Time"] = str(round(process_time * 1000, 2))
-    response.headers["X-Request-ID"] = request_id
-    
-    # Log requests (exclude health checks for cleaner logs)
-    if not request.url.path.startswith("/health"):
-        logger.info(
-            f"{request.method} {request.url.path} "
-            f"- {response.status_code} - {round(process_time * 1000)}ms"
-        )
-    
-    return response
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        
+        import uuid
+        from starlette.datastructures import MutableHeaders
+        
+        headers = dict(scope.get("headers", []))
+        request_id = headers.get(b"x-request-id", b"").decode() or str(uuid.uuid4())
+        path = scope.get("path", "")
+        method = scope.get("method", "")
+        
+        start_time = time.time()
+        response_status = 200
+        
+        async def send_with_metadata(message):
+            nonlocal response_status
+            if message["type"] == "http.response.start":
+                response_status = message.get("status", 200)
+                process_time = time.time() - start_time
+                
+                headers = MutableHeaders(raw=list(message.get("headers", [])))
+                headers["X-Process-Time"] = str(round(process_time * 1000, 2))
+                headers["X-Request-ID"] = request_id
+                message["headers"] = headers.raw
+                
+                # Log requests (exclude health checks)
+                if not path.startswith("/health"):
+                    logger.info(f"{method} {path} - {response_status} - {round(process_time * 1000)}ms")
+            
+            await send(message)
+        
+        await self.app(scope, receive, send_with_metadata)
+
+
+# Add request metadata middleware
+app.add_middleware(RequestMetadataMiddleware)
 
 
 # Include API routes
