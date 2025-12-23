@@ -125,6 +125,7 @@ setup_rate_limiter(app)
 # Security middleware stack
 app.add_middleware(RequestValidationMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+# AuditMiddleware is pure ASGI, add it directly
 app.add_middleware(AuditMiddleware, audit_logger=audit_logger)
 
 # CORS Middleware - MUST be added LAST so it processes requests FIRST

@@ -179,9 +179,10 @@ class AuditLogger:
         return sanitized
 
 
-class AuditMiddleware(BaseHTTPMiddleware):
+class AuditMiddleware:
     """
-    Middleware to automatically log API access for HIPAA compliance.
+    Pure ASGI Middleware for HIPAA-compliant audit logging.
+    Using pure ASGI instead of BaseHTTPMiddleware for better compatibility.
     """
     
     # Endpoints that access PHI and require audit logging
@@ -194,37 +195,57 @@ class AuditMiddleware(BaseHTTPMiddleware):
     }
     
     def __init__(self, app, audit_logger: AuditLogger):
-        super().__init__(app)
+        self.app = app
         self.audit_logger = audit_logger
     
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        
+        # Skip OPTIONS requests (CORS preflight)
+        if scope.get("method") == "OPTIONS":
+            await self.app(scope, receive, send)
+            return
+        
         # Check if this endpoint needs audit logging
+        path = scope.get("path", "")
         action = None
         for endpoint_prefix, action_type in self.PHI_ENDPOINTS.items():
-            if request.url.path.startswith(endpoint_prefix):
+            if path.startswith(endpoint_prefix):
                 action = action_type
                 break
         
-        response = await call_next(request)
+        # Capture response status
+        response_status = 200
+        
+        async def send_wrapper(message):
+            nonlocal response_status
+            if message["type"] == "http.response.start":
+                response_status = message.get("status", 200)
+            await send(message)
+        
+        await self.app(scope, receive, send_wrapper)
         
         # Log if PHI endpoint was accessed
-        if action:
-            user_id = self._extract_user_id(request)
-            self.audit_logger.log_access(
-                user_id=user_id,
-                action=action,
-                resource=request.url.path,
-                request=request,
-                response_status=response.status_code
-            )
-        
-        return response
+        if action and settings.enable_audit_log:
+            try:
+                request = Request(scope)
+                user_id = self._extract_user_id(request)
+                self.audit_logger.log_access(
+                    user_id=user_id,
+                    action=action,
+                    resource=path,
+                    request=request,
+                    response_status=response_status
+                )
+            except Exception as e:
+                logger.warning(f"Audit logging failed: {e}")
     
     def _extract_user_id(self, request: Request) -> str:
         """Extract user ID from JWT token if present."""
         auth_header = request.headers.get("authorization", "")
         if auth_header.startswith("Bearer "):
-            # Return hashed token identifier (actual user lookup would be done in production)
             return f"user_{hash(auth_header[7:]) % 1000000}"
         return "anonymous"
 
