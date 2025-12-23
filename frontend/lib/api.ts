@@ -203,8 +203,8 @@ class ApiClient {
     });
   }
 
-  async searchDrugs(query: string): Promise<any[]> {
-    return this.request(`/api/v1/drugs/search?query=${encodeURIComponent(query)}`);
+  async searchDrugs(query: string, limit: number = 10): Promise<{ drugs: any[] }> {
+    return this.request(`/api/v1/drugs/search?query=${encodeURIComponent(query)}&limit=${limit}`);
   }
 
   async getDrugInfo(drugName: string): Promise<any> {
