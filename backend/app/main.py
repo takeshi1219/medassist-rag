@@ -308,9 +308,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled errors."""
     # Log the full error
     logger.exception(f"Unhandled exception on {request.url.path}: {exc}")
+    logger.error(f"Exception type: {type(exc).__name__}, args: {exc.args}")
     
-    # Return sanitized error in production
-    error_detail = str(exc) if settings.debug else "An internal server error occurred"
+    # Return actual error in development, sanitized in production
+    error_detail = str(exc) if settings.is_development else "An internal server error occurred"
     
     # Include CORS headers for cross-origin error responses
     headers = get_cors_headers(request)
