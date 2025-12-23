@@ -119,24 +119,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Setup rate limiting FIRST (before other middleware)
+# Setup rate limiting first
 setup_rate_limiter(app)
 
-# Security middleware stack (order matters)
+# Security middleware stack
 app.add_middleware(RequestValidationMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuditMiddleware, audit_logger=audit_logger)
 
-# CORS Middleware
+# CORS Middleware - MUST be added LAST so it processes requests FIRST
+# This ensures OPTIONS preflight requests get CORS headers before other middleware
 if settings.allowed_origins_list:
+    logger.info(f"CORS configured for origins: {settings.allowed_origins_list}")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins_list,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        allow_headers=["*"],  # Allow all headers
         expose_headers=["X-Process-Time", "X-Request-ID"],
-        max_age=3600,  # Cache preflight for 1 hour
+        max_age=3600,
     )
 else:
     logger.warning("CORS not configured - no origins allowed")
