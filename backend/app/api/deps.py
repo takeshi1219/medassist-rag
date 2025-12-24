@@ -19,6 +19,11 @@ security_optional = HTTPBearer(auto_error=False)
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get database session."""
+    if async_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database not configured"
+        )
     async with async_session() as session:
         try:
             yield session
