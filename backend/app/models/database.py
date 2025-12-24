@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
     Column, String, Text, Integer, DateTime, ForeignKey,
-    JSON, Enum as SQLEnum, UniqueConstraint, Index
+    JSON, UniqueConstraint, Index
 )
 from sqlalchemy.orm import relationship, DeclarativeBase
 from sqlalchemy.dialects.postgresql import UUID
@@ -23,20 +23,16 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(
-        SQLEnum('doctor', 'nurse', 'pharmacist', 'admin', name='user_role'),
-        nullable=False,
-        default='doctor'
-    )
-    organization = Column(String(255))
-    license_number = Column(String(100))
+    role = Column(String(50), nullable=False, default='doctor')  # doctor, nurse, pharmacist, admin
+    organization = Column(String(255), nullable=True)
+    license_number = Column(String(100), nullable=True)
     is_active = Column(String(10), default='true')
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    query_logs = relationship("QueryLog", back_populates="user")
-    saved_queries = relationship("SavedQuery", back_populates="user")
+    query_logs = relationship("QueryLog", back_populates="user", cascade="all, delete-orphan")
+    saved_queries = relationship("SavedQuery", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User {self.email}>"
@@ -51,10 +47,7 @@ class QueryLog(Base):
     query_text = Column(Text, nullable=False)
     response_text = Column(Text)
     sources = Column(JSON)  # Array of citation objects
-    query_type = Column(
-        SQLEnum('chat', 'drug_check', 'code_lookup', 'search', name='query_type'),
-        nullable=False
-    )
+    query_type = Column(String(50), nullable=False)  # chat, drug_check, code_lookup, search
     response_time_ms = Column(Integer)
     model_used = Column(String(100))
     language = Column(String(10), default='en')
@@ -99,10 +92,7 @@ class DrugInteractionCache(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     drug_a = Column(String(255), nullable=False, index=True)
     drug_b = Column(String(255), nullable=False, index=True)
-    severity = Column(
-        SQLEnum('none', 'mild', 'moderate', 'severe', 'contraindicated', name='severity'),
-        nullable=False
-    )
+    severity = Column(String(50), nullable=False)  # none, mild, moderate, severe, contraindicated
     description = Column(Text, nullable=False)
     mechanism = Column(Text)
     management = Column(Text)

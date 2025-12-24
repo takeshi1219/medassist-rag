@@ -206,35 +206,44 @@ async def register(
         )
     
     # Production registration - check if user exists
-    existing = await get_user_by_email(db, user_data.email)
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        existing = await get_user_by_email(db, user_data.email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Hash password and create user
+        hashed_password = hash_password(user_data.password)
+        db_user = await create_user(
+            db=db,
+            email=user_data.email,
+            name=user_data.name,
+            hashed_password=hashed_password,
+            role=user_data.role or "doctor",
+            organization=user_data.organization,
+            license_number=user_data.license_number
         )
-    
-    # Hash password and create user
-    hashed_password = hash_password(user_data.password)
-    db_user = await create_user(
-        db=db,
-        email=user_data.email,
-        name=user_data.name,
-        hashed_password=hashed_password,
-        role=user_data.role or "doctor",
-        organization=user_data.organization,
-        license_number=user_data.license_number
-    )
-    
-    logger.info(f"New user registered: {user_data.email}")
-    
-    return UserResponse(
-        id=str(db_user.id),
-        email=db_user.email,
-        name=db_user.name,
-        role=db_user.role,
-        organization=db_user.organization,
-        license_number=db_user.license_number
-    )
+        
+        logger.info(f"New user registered: {user_data.email}")
+        
+        return UserResponse(
+            id=str(db_user.id),
+            email=db_user.email,
+            name=db_user.name,
+            role=db_user.role,
+            organization=db_user.organization,
+            license_number=db_user.license_number
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error for {user_data.email}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
 @router.post("/logout")
