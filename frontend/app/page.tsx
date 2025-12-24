@@ -22,28 +22,28 @@ const features = [
     icon: MessageSquare,
     title: "Medical Chat",
     description: "Ask medical questions and get evidence-based answers with citations",
-    href: "/chat",
+    href: "/login",
     color: "text-blue-500",
   },
   {
     icon: Pill,
     title: "Drug Interaction Checker",
     description: "Check interactions between multiple medications instantly",
-    href: "/drug-checker",
+    href: "/login",
     color: "text-green-500",
   },
   {
     icon: BookOpen,
     title: "Medical Code Lookup",
     description: "Search ICD-10 and SNOMED-CT codes quickly",
-    href: "/codes",
+    href: "/login",
     color: "text-purple-500",
   },
   {
     icon: Languages,
     title: "Medical Translation",
     description: "Translate medical terms between Japanese and English",
-    href: "/translate",
+    href: "/login",
     color: "text-orange-500",
   },
 ];
@@ -81,9 +81,9 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login">
-              <Button variant="ghost">Login</Button>
+              <Button variant="ghost">Sign In</Button>
             </Link>
-            <Link href="/chat">
+            <Link href="/register">
               <Button>Get Started</Button>
             </Link>
           </div>
@@ -106,16 +106,16 @@ export default function HomePage() {
             from medical literature.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/chat">
+            <Link href="/register">
               <Button size="lg" className="gap-2">
-                Start Asking Questions
+                Create Free Account
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/drug-checker">
+            <Link href="/login">
               <Button size="lg" variant="outline" className="gap-2">
-                <Pill className="w-4 h-4" />
-                Check Drug Interactions
+                Sign In
+                <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </div>
@@ -212,9 +212,9 @@ export default function HomePage() {
           <p className="text-lg opacity-90 mb-8">
             Join healthcare professionals using AI-powered clinical decision support
           </p>
-          <Link href="/chat">
+          <Link href="/register">
             <Button size="lg" variant="secondary" className="gap-2">
-              Start Using MedAssist
+              Create Your Account
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>

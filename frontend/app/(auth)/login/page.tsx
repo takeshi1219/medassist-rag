@@ -25,24 +25,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push("/chat");
-    } catch (err) {
-      setError("Invalid credentials. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setEmail("demo@medassist.com");
-    setPassword("demo123");
-    setIsLoading(true);
-    setError("");
-
-    try {
-      await login("demo@medassist.com", "demo123");
-      router.push("/chat");
-    } catch (err) {
-      setError("Demo login failed. Please try again.");
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -111,24 +95,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-          >
-            Continue with Demo Account
-          </Button>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{" "}

@@ -3,16 +3,18 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from jose import jwt
 from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
 from app.config import settings
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_db
 from app.models.schemas import (
     LoginRequest, LoginResponse, UserCreate,
     UserResponse, UserInDB
 )
 from app.middleware.audit import audit_logger
 from app.middleware.rate_limit import limiter, AUTH_RATE_LIMIT
+from app.services.user_service import get_user_by_email, create_user
 
 
 router = APIRouter()
@@ -63,7 +65,11 @@ def hash_password(password: str) -> str:
 
 @router.post("/login", response_model=LoginResponse)
 @limiter.limit(AUTH_RATE_LIMIT)
-async def login(request: Request, login_request: LoginRequest):
+async def login(
+    request: Request,
+    login_request: LoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
     """
     Authenticate user and return JWT token.
     
@@ -106,39 +112,73 @@ async def login(request: Request, login_request: LoginRequest):
             user=user
         )
     
-    # Production authentication
-    # TODO: Implement database lookup
-    # user = await get_user_by_email(db, login_request.email)
-    # if not user or not verify_password(login_request.password, user.hashed_password):
-    #     audit_logger.log_auth_event(
-    #         event_type="FAILED_LOGIN",
-    #         email=login_request.email,
-    #         success=False,
-    #         request=request,
-    #         reason="Invalid credentials"
-    #     )
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Invalid email or password"
-    #     )
+    # Production authentication - database lookup
+    db_user = await get_user_by_email(db, login_request.email)
     
-    audit_logger.log_auth_event(
-        event_type="FAILED_LOGIN",
-        email=login_request.email,
-        success=False,
-        request=request,
-        reason="Production auth not configured"
+    if not db_user or not verify_password(login_request.password, db_user.hashed_password):
+        audit_logger.log_auth_event(
+            event_type="FAILED_LOGIN",
+            email=login_request.email,
+            success=False,
+            request=request,
+            reason="Invalid credentials"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    
+    # Check if user is active
+    if db_user.is_active != 'true':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is disabled"
+        )
+    
+    # Create response user
+    user = UserResponse(
+        id=str(db_user.id),
+        email=db_user.email,
+        name=db_user.name,
+        role=db_user.role,
+        organization=db_user.organization,
+        license_number=db_user.license_number
     )
     
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication not configured. Enable demo mode for development."
+    access_token = create_access_token(
+        data={
+            "sub": str(db_user.id),
+            "email": db_user.email,
+            "name": db_user.name,
+            "role": db_user.role,
+            "organization": db_user.organization
+        }
+    )
+    
+    audit_logger.log_auth_event(
+        event_type="LOGIN",
+        email=login_request.email,
+        success=True,
+        request=request
+    )
+    
+    logger.info(f"User logged in: {login_request.email}")
+    
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=settings.session_expiry_hours * 3600,
+        user=user
     )
 
 
 @router.post("/register", response_model=UserResponse)
 @limiter.limit(AUTH_RATE_LIMIT)
-async def register(request: Request, user_data: UserCreate):
+async def register(
+    request: Request,
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
     """
     Register a new healthcare provider account.
     
@@ -165,21 +205,35 @@ async def register(request: Request, user_data: UserCreate):
             license_number=user_data.license_number
         )
     
-    # Production registration
-    # TODO: Implement database creation
-    # Check if user exists
-    # existing = await get_user_by_email(db, user_data.email)
-    # if existing:
-    #     raise HTTPException(status_code=400, detail="Email already registered")
-    # 
-    # # Hash password and create user
-    # hashed_password = hash_password(user_data.password)
-    # user = await create_user(db, user_data, hashed_password)
-    # return user
+    # Production registration - check if user exists
+    existing = await get_user_by_email(db, user_data.email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
     
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Registration not configured. Enable demo mode for development."
+    # Hash password and create user
+    hashed_password = hash_password(user_data.password)
+    db_user = await create_user(
+        db=db,
+        email=user_data.email,
+        name=user_data.name,
+        hashed_password=hashed_password,
+        role=user_data.role or "doctor",
+        organization=user_data.organization,
+        license_number=user_data.license_number
+    )
+    
+    logger.info(f"New user registered: {user_data.email}")
+    
+    return UserResponse(
+        id=str(db_user.id),
+        email=db_user.email,
+        name=db_user.name,
+        role=db_user.role,
+        organization=db_user.organization,
+        license_number=db_user.license_number
     )
 
 
