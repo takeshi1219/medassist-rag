@@ -7,10 +7,11 @@ import { Activity, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,9 +23,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await api.login(email, password);
-      api.setToken(response.access_token);
-      localStorage.setItem("token", response.access_token);
+      await login(email, password);
       router.push("/chat");
     } catch (err) {
       setError("Invalid credentials. Please try again.");
@@ -37,11 +36,10 @@ export default function LoginPage() {
     setEmail("demo@medassist.com");
     setPassword("demo123");
     setIsLoading(true);
+    setError("");
 
     try {
-      const response = await api.login("demo@medassist.com", "demo123");
-      api.setToken(response.access_token);
-      localStorage.setItem("token", response.access_token);
+      await login("demo@medassist.com", "demo123");
       router.push("/chat");
     } catch (err) {
       setError("Demo login failed. Please try again.");

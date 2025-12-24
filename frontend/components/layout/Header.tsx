@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   title?: string;
@@ -18,10 +19,26 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const [isDark, setIsDark] = React.useState(false);
+  const { user } = useAuth();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
+  };
+
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Format role for display
+  const formatRole = (role: string) => {
+    return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
   return (
@@ -69,13 +86,15 @@ export function Header({ title, subtitle }: HeaderProps) {
           {/* User menu */}
           <div className="flex items-center gap-3 ml-2 pl-4 border-l">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium">Dr. Demo User</p>
-              <p className="text-xs text-muted-foreground">Physician</p>
+              <p className="text-sm font-medium">{user?.name || "Guest"}</p>
+              <p className="text-xs text-muted-foreground">
+                {user?.role ? formatRole(user.role) : ""}
+              </p>
             </div>
             <Avatar className="h-9 w-9">
-              <AvatarImage src="" alt="User" />
+              <AvatarImage src="" alt={user?.name || "User"} />
               <AvatarFallback className="bg-primary text-primary-foreground">
-                <User className="h-4 w-4" />
+                {user?.name ? getInitials(user.name) : <User className="h-4 w-4" />}
               </AvatarFallback>
             </Avatar>
           </div>

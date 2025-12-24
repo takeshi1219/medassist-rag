@@ -7,10 +7,11 @@ import { Activity, Loader2, Mail, Lock, User, Building, ArrowRight } from "lucid
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -46,7 +47,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await api.register({
+      await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
