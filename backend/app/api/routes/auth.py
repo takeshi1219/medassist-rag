@@ -23,7 +23,8 @@ router = APIRouter()
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
-    bcrypt__rounds=12  # Increase for production security
+    bcrypt__rounds=12,  # Increase for production security
+    bcrypt__ident="2b"  # Use modern bcrypt identifier
 )
 
 
@@ -59,8 +60,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def hash_password(password: str) -> str:
-    """Hash a password."""
-    return pwd_context.hash(password)
+    """Hash a password securely."""
+    # Ensure password is a clean string, truncate for bcrypt
+    clean_password = str(password).strip()[:72]
+    return pwd_context.hash(clean_password)
 
 
 @router.post("/login", response_model=LoginResponse)
