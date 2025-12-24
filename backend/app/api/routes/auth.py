@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from jose import jwt
-from passlib.context import CryptContext
+import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
@@ -18,14 +18,6 @@ from app.services.user_service import get_user_by_email, create_user
 
 
 router = APIRouter()
-
-# Password hashing with secure defaults
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12,  # Increase for production security
-    bcrypt__ident="2b"  # Use modern bcrypt identifier
-)
 
 
 def create_access_token(
@@ -56,14 +48,22 @@ def create_access_token(
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'),
+            hashed_password.encode('utf-8')
+        )
+    except Exception as e:
+        logger.error(f"Password verification error: {e}")
+        return False
 
 
 def hash_password(password: str) -> str:
-    """Hash a password securely."""
-    # Ensure password is a clean string, truncate for bcrypt
-    clean_password = str(password).strip()[:72]
-    return pwd_context.hash(clean_password)
+    """Hash a password securely using bcrypt."""
+    # Encode and hash with bcrypt
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 
 @router.post("/login", response_model=LoginResponse)
