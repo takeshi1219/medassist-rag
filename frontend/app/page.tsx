@@ -15,7 +15,6 @@ import {
   HeartPulse,
   Brain,
   FileText,
-  CheckCircle2,
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,8 +73,8 @@ export default function HomePage() {
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
         {/* Grid pattern */}
         <div 
           className="absolute inset-0 opacity-[0.02]"
@@ -147,14 +146,14 @@ export default function HomePage() {
               Get evidence-based answers with citations from peer-reviewed medical literature.
             </p>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons - Only one primary action */}
             <div className="flex flex-wrap justify-center gap-4 mb-16">
               <Link href="/register">
                 <Button 
                   size="lg" 
                   className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white border-0 shadow-xl shadow-cyan-500/30 text-base px-8 h-12"
                 >
-                  Start Free Trial
+                  Create Free Account
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -164,7 +163,7 @@ export default function HomePage() {
                   variant="outline"
                   className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white text-base px-8 h-12"
                 >
-                  Sign In to Dashboard
+                  Already have an account?
                 </Button>
               </Link>
             </div>
@@ -174,7 +173,8 @@ export default function HomePage() {
               {stats.map((stat, i) => (
                 <div 
                   key={stat.label} 
-                  className={`text-center transition-all duration-700 delay-${i * 100} ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  className={`text-center transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ transitionDelay: `${i * 100}ms` }}
                 >
                   <div className="text-2xl lg:text-3xl font-bold text-white mb-1">{stat.value}</div>
                   <div className="text-sm text-slate-500 uppercase tracking-wider">{stat.label}</div>
@@ -204,7 +204,8 @@ export default function HomePage() {
                 <Link 
                   key={feature.title} 
                   href="/login"
-                  className={`group relative transition-all duration-500 delay-${index * 100}`}
+                  className="group relative"
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="relative p-8 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-all duration-300 hover:transform hover:-translate-y-1">
                     {/* Gradient glow on hover */}
@@ -247,7 +248,7 @@ export default function HomePage() {
               </p>
               
               <div className="space-y-5">
-                {benefits.map((benefit, index) => {
+                {benefits.map((benefit) => {
                   const Icon = benefit.icon;
                   return (
                     <div 
@@ -277,7 +278,7 @@ export default function HomePage() {
             </div>
 
             {/* Visual element */}
-            <div className="relative">
+            <div className="relative hidden lg:block">
               <div className="relative aspect-square max-w-md mx-auto">
                 {/* Outer ring */}
                 <div className="absolute inset-0 rounded-full border border-slate-800" />
@@ -295,16 +296,16 @@ export default function HomePage() {
                 </div>
 
                 {/* Floating icons */}
-                <div className="absolute top-8 left-1/2 -translate-x-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center animate-float">
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center">
                   <MessageSquare className="w-6 h-6 text-cyan-400" />
                 </div>
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center animate-float-delayed">
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-emerald-400" />
                 </div>
-                <div className="absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center animate-float">
+                <div className="absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center">
                   <Pill className="w-6 h-6 text-violet-400" />
                 </div>
-                <div className="absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center animate-float-delayed">
+                <div className="absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-amber-400" />
                 </div>
               </div>
@@ -326,7 +327,7 @@ export default function HomePage() {
                 Ready to Transform Your Practice?
               </h2>
               <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                Join healthcare professionals using AI-powered clinical decision support
+                Join thousands of healthcare professionals using AI-powered clinical decision support
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link href="/register">
@@ -334,17 +335,8 @@ export default function HomePage() {
                     size="lg"
                     className="bg-white text-teal-600 hover:bg-slate-100 shadow-xl"
                   >
-                    Create Free Account
+                    Get Started Free
                     <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button 
-                    size="lg"
-                    variant="outline"
-                    className="border-white/30 text-white hover:bg-white/10"
-                  >
-                    Sign In
                   </Button>
                 </Link>
               </div>
