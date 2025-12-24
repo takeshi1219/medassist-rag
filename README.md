@@ -1,5 +1,5 @@
 # 🏥 MedAssist RAG
-![App Screenshot](https://github.com/takeshi1219/medassist-rag/blob/main/MedAssistRA.png)
+![App Screenshot](https://github.com/takeshi1219/medassist-rag/blob/main/MedAssistRAG.png)
 AI-powered clinical decision support system using Retrieval-Augmented Generation (RAG) to help healthcare professionals access medical information through natural language queries.
 
 ![MedAssist RAG](https://img.shields.io/badge/version-1.0.0-blue.svg)
