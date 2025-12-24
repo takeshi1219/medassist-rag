@@ -242,3 +242,48 @@
   @apply bg-background/80 backdrop-blur-lg border border-border/50;
 }
 
+/* Floating animation for landing page */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(-50%);
+  }
+  50% {
+    transform: translateY(-10px) translateX(-50%);
+  }
+}
+
+@keyframes float-side {
+  0%, 100% {
+    transform: translateY(-50%) translateX(0px);
+  }
+  50% {
+    transform: translateY(-50%) translateX(5px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/* Adjust floating for side elements */
+.absolute.left-8.top-1\/2 {
+  animation: float-side 3s ease-in-out infinite;
+}
+
+.absolute.right-8.top-1\/2 {
+  animation: float-side 3s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/* Delay utilities */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-1000 { animation-delay: 1000ms; }
+
