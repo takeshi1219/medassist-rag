@@ -1,8 +1,9 @@
 """Authentication API routes (Production Ready)."""
 from datetime import datetime, timedelta, timezone
+import hashlib
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from jose import jwt
-import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
@@ -47,23 +48,38 @@ def create_access_token(
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash."""
+    """Verify password against hash using PBKDF2."""
     try:
-        return bcrypt.checkpw(
+        # Format: algorithm$iterations$salt$hash
+        parts = hashed_password.split('$')
+        if len(parts) != 4:
+            return False
+        algorithm, iterations, salt, stored_hash = parts
+        # Hash the provided password with the same salt
+        computed_hash = hashlib.pbkdf2_hmac(
+            'sha256',
             plain_password.encode('utf-8'),
-            hashed_password.encode('utf-8')
-        )
+            salt.encode('utf-8'),
+            int(iterations)
+        ).hex()
+        return secrets.compare_digest(computed_hash, stored_hash)
     except Exception as e:
         logger.error(f"Password verification error: {e}")
         return False
 
 
 def hash_password(password: str) -> str:
-    """Hash a password securely using bcrypt."""
-    # Encode and hash with bcrypt
-    salt = bcrypt.gensalt(rounds=12)
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
+    """Hash a password securely using PBKDF2-SHA256."""
+    salt = secrets.token_hex(16)
+    iterations = 100000
+    hash_value = hashlib.pbkdf2_hmac(
+        'sha256',
+        password.encode('utf-8'),
+        salt.encode('utf-8'),
+        iterations
+    ).hex()
+    # Format: algorithm$iterations$salt$hash
+    return f"pbkdf2_sha256${iterations}${salt}${hash_value}"
 
 
 @router.post("/login", response_model=LoginResponse)
